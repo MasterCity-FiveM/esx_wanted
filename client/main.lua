@@ -22,9 +22,8 @@ AddEventHandler('onClientMapStart', function()
 
 	ESX.TriggerServerCallback("esx_wanted:retrieveWantedTime", function(inWanted, newWantedTime, id)
 		if inWanted then
-
 			wantedTime = newWantedTime
-			ESX.ShowNotification(_U('player_loaded'))
+			exports.pNotify:SendNotification({text = "شما تحت تعقیب می باشید.", type = "success", timeout = 4000})
 			InWanted()
 		end
 	end)
@@ -33,38 +32,29 @@ end)
 RegisterNetEvent("esx_wanted:wantedPlayer")
 AddEventHandler("esx_wanted:wantedPlayer", function(newWantedTime)
 	wantedTime = newWantedTime
-
 	InWanted()
 end)
 
 RegisterNetEvent("esx_wanted:unWantedPlayer")
 AddEventHandler("esx_wanted:unWantedPlayer", function()
 	wantedTime = 0
-
 	InWanted()
 end)
 
 function InWanted()
-
 	Citizen.CreateThread(function()
-
 		while wantedTime > 0 do
-
+			exports.pNotify:SendNotification({text = "شما تا " .. wantedTime .. " دقیقه دیگر تحت تعقیب می باشید.", type = "info", timeout = 4000})
 			wantedTime = wantedTime - 1
-
-			ESX.ShowNotification(_U('time_left', wantedTime))
-
 			TriggerServerEvent("esx_wanted:updateWantedTime", wantedTime)
-
+			
+			Citizen.Wait(60000)
+			
 			if wantedTime == 0 then
-				ESX.ShowNotification(_U('player_out'))
+				exports.pNotify:SendNotification({text = "مدت تحت تعقیب قرار گرفتن شما به پایان رسید.", type = "success", timeout = 4000})
 				TriggerServerEvent("esx_wanted:updateWantedTime", 0)
 			end
-
-			Citizen.Wait(60000)
-
 		end
-
 	end)
 end
 
@@ -80,134 +70,79 @@ function OpenPoliceWantedMenu()
 		title    = _U('add_chat'),
 		align    = 'right',
 		elements = {
-			{label = _U('open_wanted'), value = 'open_wanted'},
-			{label = _U('open_unwanted'), value = 'open_unwanted'}
+			{label = "افراد تحت تعقیب", value = 'open_unwanted'},
+			{label = "افزودن فرد جدید", value = 'open_wanted'}
 	}}, function(data, menu)
 		if data.current.value == 'open_wanted' then
-			ESX.TriggerServerCallback('esx_wanted:getOnlinePlayers', function(players)
-				local elements = {}
-				for i=1, #players, 1 do
-						table.insert(elements, {
-							label = players[i].name,
-							value = players[i].source,
-							name = players[i].name,
-							identifier = players[i].identifier
-						})
-				end
-				ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'recruit_', {
-					title    = _U('open_wanted'),
-					align    = 'right',
-					elements = elements
-				}, function(data2, menu2)
-		
-					ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'recruit_confirm_', {
-						title    = _U('are_you_sure', data2.current.name),
-						align    = 'right',
-						elements = {
-							{label = _U('set_time'), value = 'time'},
-							{label = _U('no'), value = 'no'}
-						}
-					}, function(data3, menu3)
-						menu3.close()
-						local name = data2.current.name
-						local Playerid = data2.current.value
-		
-						if data3.current.value == 'time' then
-							
-							menu3.close()
-		
-							ESX.UI.Menu.Open(
-								'dialog', GetCurrentResourceName(), 'wanted_choose_time_menu',
-								{
-									title = _U('set_min')
-								},
-							function(data4, menu4)
-		
-								local wantedTime = tonumber(data4.value)
-		
+			ESX.UI.Menu.Open('dialog', GetCurrentResourceName(), 'wanted_choose_id_menu',
+				{ title = "کد ملی" }, function(data1, menu1)
+					local PlayerSRC = tonumber(data1.value)
+					if PlayerSRC == nil then
+						exports.pNotify:SendNotification({text = "مقدار وارد شده صحیح نیست.", type = "error", timeout = 4000})
+					else
+						menu1.close()
+						
+						ESX.UI.Menu.Open('dialog', GetCurrentResourceName(), 'wanted_choose_time_menu',
+							{ title = "مدت تحت تعقیب - دقیقه" }, function(data2, menu2)
+								local wantedTime = tonumber(data2.value)
 								if wantedTime == nil then
-									ESX.ShowNotification(_U('time_error'))
+									exports.pNotify:SendNotification({text = "مقدار وارد شده صحیح نیست.", type = "error", timeout = 4000})
 								else
-									menu4.close()
-		
-										ESX.UI.Menu.Open(
-											'dialog', GetCurrentResourceName(), 'wanted_choose_reason_menu',
-											{
-											title = _U('reason')
-											},
-										function(data5, menu5)
-						
-											local reason = data5.value
-						
+									menu2.close()
+									ESX.UI.Menu.Open('dialog', GetCurrentResourceName(), 'wanted_choose_time_menu',
+										{ title = "علت" }, function(data3, menu3)
+											local reason = data3.value
 											if reason == nil then
-												ESX.ShowNotification(_U('reason_error'))
+												exports.pNotify:SendNotification({text = "مقدار وارد شده صحیح نیست.", type = "error", timeout = 4000})
 											else
-												menu5.close()
-						
-												TriggerServerEvent("esx_wanted:wantedPlayer",Playerid,name, wantedTime, reason)
-
-												if Config.GcphoneMessageAddWanted then
-													TriggerServerEvent('gcPhone:sendMessage', 'police',_U('gcphone_message_add_wanted', name, wantedTime))
-												end
-												if PlayerData.job and PlayerData.job.name == 'police' then
-													ESX.ShowNotification(_U('police_message',name,wantedTime))
-												end
-
-											end
-						
-										end, function(data5, menu5)
-											menu5.close()
+												menu3.close()
+												
+												TriggerServerEvent("esx_wanted:wantedPlayer", PlayerSRC, wantedTime, reason)
+											end	
+										end, function(data3, menu3)
+												menu3.close()
 										end)
-								end
-							end, function(data4, menu4)
-								menu4.close()
+										
+								end	
+							end, function(data2, menu2)
+									menu2.close()
 							end)
-						end
-					end, function(data3, menu3)
-						menu3.close()
-					end)
-		
-				end, function(data2, menu2)
-					menu2.close()
+							
+					end	
+				end, function(data1, menu1)
+						menu1.close()
 				end)
-		
-			end)
 		elseif data.current.value == 'open_unwanted' then
 			local elements = {}
 
 			ESX.TriggerServerCallback("esx_wanted:retrieveWantedPlayers", function(playerArray)
-		
 				if #playerArray == 0 then
-					ESX.ShowNotification(_U('no_wanted'))
+					exports.pNotify:SendNotification({text = "لیست مجرمان تحت تعقیب خالی می باشد.", type = "success", timeout = 4000})
 					return
 				end
 		
 				for i = 1, #playerArray, 1 do
-					table.insert(elements, {label = _U('wanted_player', playerArray[i].name, playerArray[i].wantedTime),name = playerArray[i].name, value = playerArray[i].identifier })
+					table.insert(elements, {label = _U('wanted_player', playerArray[i].name, playerArray[i].wantedTime),name = playerArray[i].name, value = playerArray[i].playersrc})
 				end
 		
 				ESX.UI.Menu.Open(
 					'default', GetCurrentResourceName(), 'wanted_unwanted_menu',
 					{
-						title = _U('open_unwanted'),
+						title = "افراد تحت تعقیب",
 						align = "center",
 						elements = elements
 					},
 				function(data2, menu2)
-					local identifier = data2.current.value
+					local source = data2.current.value
 					local playername = data2.current.name
 		
-					TriggerServerEvent("esx_wanted:unWantedPlayer",playername,identifier)
-					if Config.GcphoneMessageUnWanted then
-						TriggerServerEvent('gcPhone:sendMessage', 'police',_U('gcphone_message_unwanted', playername))
-					end
+					TriggerServerEvent("esx_wanted:unWantedPlayer", source)
 
 					if PlayerData.job and PlayerData.job.name == 'police' then
-						ESX.ShowNotification(_U('police_message_un',playername))
+						exports.pNotify:SendNotification({text = "شهروند از حالت تحت تعقیب خارج شد.", type = "success", timeout = 4000})
 					end
-		
+					
 					menu2.close()
-		
 				end, function(data2, menu2)
 					menu2.close()
 				end)
@@ -220,7 +155,7 @@ end
 
 RegisterNetEvent('esx_wanted:setBlip')
 AddEventHandler('esx_wanted:setBlip', function(Playerid)
-	if PlayerData.job and PlayerData.job.name == 'police' or PlayerData.job.name == 'offpolice' then
+	if PlayerData.job and PlayerData.job.name == 'police' then
 		local id = GetPlayerFromServerId(Playerid)
 		local ped = GetPlayerPed(id)
 		local x, y, z = table.unpack(GetEntityCoords(ped, true))
@@ -238,5 +173,12 @@ AddEventHandler('esx_wanted:setBlip', function(Playerid)
 		for i, blip in pairs(blips) do 
 			RemoveBlip(blip)
 		end
+	end
+end)
+
+RegisterNetEvent('esx_wanted:ShowPoliceWarn')
+AddEventHandler('esx_wanted:ShowPoliceWarn', function(message)
+	if PlayerData.job and PlayerData.job.name == 'police' then
+		exports.pNotify:SendNotification({text = message, type = "info", timeout = 6000})
 	end
 end)

@@ -1,8 +1,5 @@
 Config                              = {}
 
-Config.Discord                      = false      -- Send message to DISCORD.[是否記錄到Discord]
-Config.DiscordWebHook               = "" 
-
 Config.GcphoneMessageAddWanted      = true     -- Send message to Gcphone. !!Need gcphone!![Gcphone通知，沒裝請關閉]
 Config.GcphoneMessageUnWanted       = true     -- Send message to Gcphone. !!Need gcphone!![Gcphone通知，沒裝請關閉]
 
