@@ -20,6 +20,7 @@ end
 
 RegisterServerEvent("esx_wanted:wantedPlayer")
 AddEventHandler("esx_wanted:wantedPlayer", function(Playerid, wantedTime, wantedReason)
+	ESX.RunCustomFunction("anti_ddos", source, 'esx_wanted:wantedPlayer', {Playerid = Playerid, wantedTime = wantedTime, wantedReason = wantedReason})
     local src = source
 	local xPlayer = ESX.GetPlayerFromId(src)
 	local tPlayer = ESX.GetPlayerFromId(Playerid)
@@ -64,6 +65,7 @@ function EditWantedTime(wantedPlayer, wantedTime)
 end
 
 ESX.RegisterServerCallback("esx_wanted:retrieveWantedPlayers", function(source, cb)
+	ESX.RunCustomFunction("anti_ddos", source, 'esx_wanted:retrieveWantedPlayers', {})
 	local wantedPersons = {}
 	local xPlayer = ESX.GetPlayerFromId(source)
 	if not xPlayer or xPlayer.job == nil or xPlayer.job.name ~= 'police' then
@@ -94,6 +96,7 @@ function UnWanted(wantedPlayer)
 end
 
 ESX.RegisterServerCallback("esx_wanted:retrieveWantedTime", function(source, cb)
+	ESX.RunCustomFunction("anti_ddos", source, 'esx_wanted:retrieveWantedTime', {})
 	local src = source
 	local xPlayer = ESX.GetPlayerFromId(src)
 	local Identifier = xPlayer.identifier
@@ -110,6 +113,7 @@ end)
 
 RegisterServerEvent("esx_wanted:updateWantedTime")
 AddEventHandler("esx_wanted:updateWantedTime", function(newWantedTime)
+	ESX.RunCustomFunction("anti_ddos", source, 'esx_wanted:updateWantedTime', {newWantedTime = newWantedTime})
     local src = source
     EditWantedTime(src, newWantedTime)
     if Config.WantedBlip and newWantedTime > 0 then
@@ -119,6 +123,7 @@ end)
 
 RegisterServerEvent("esx_wanted:unWantedPlayer")
 AddEventHandler("esx_wanted:unWantedPlayer", function(Player)
+	ESX.RunCustomFunction("anti_ddos", source, 'esx_wanted:unWantedPlayer', {player = player})
 	local src = source
     local xPlayer = ESX.GetPlayerFromId(Player)
     if xPlayer ~= nil then
